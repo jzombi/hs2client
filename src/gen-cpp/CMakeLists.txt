@@ -25,6 +25,8 @@ set(THRIFT_SRC
   TCLIService_types.cpp
   ExecStats_constants.cpp
   ExecStats_types.cpp
+  ErrorCodes_constants.cpp
+  ErrorCodes_types.cpp
   hive_metastore_constants.cpp
   hive_metastore_types.cpp
   Status_constants.cpp

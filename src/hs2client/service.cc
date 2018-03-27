@@ -18,6 +18,7 @@
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TTransportUtils.h>
+#include <thrift/stdcxx.h>
 
 #include "hs2client/session.h"
 #include "hs2client/logging.h"
@@ -34,6 +35,7 @@ using apache::thrift::protocol::TProtocol;
 using apache::thrift::transport::TBufferedTransport;
 using apache::thrift::transport::TSocket;
 using apache::thrift::transport::TTransport;
+using apache::thrift::stdcxx::shared_ptr;
 using std::string;
 using std::unique_ptr;
 
@@ -41,10 +43,10 @@ namespace hs2client {
 
 struct Service::ServiceImpl {
   hs2::TProtocolVersion::type protocol_version;
-  // The use of boost here is required for Thrift compatibility.
-  boost::shared_ptr<TSocket> socket;
-  boost::shared_ptr<TTransport> transport;
-  boost::shared_ptr<TProtocol> protocol;
+  // Using apache::thrift::stdcxx::shared_ptr to support thrift built with std::shared_ptr and boost::shared_ptr too
+  shared_ptr<TSocket> socket;
+  shared_ptr<TTransport> transport;
+  shared_ptr<TProtocol> protocol;
 };
 
 Status Service::Connect(const string& host, int port, int conn_timeout,

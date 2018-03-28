@@ -242,6 +242,35 @@ cdef class Operation:
         for py_row_set in batches:
             c_row_sets.push_back(py_row_set.data.get())
 
+        return self._row_sets_to_pandas(schema, c_row_sets)
+
+    def fetchbatch_pandas(self, batchsize=None):
+        """
+
+        """
+        cdef:
+            vector[CColumnarRowSet*] c_row_sets
+            ColumnarRowSet py_row_set
+            Schema schema
+            const CColumnType* col_type
+            int i
+
+
+        # The extension class retains ownership of the
+        # hs2client::ColumnarRowSet
+        batch = self.fetchbatch_internal(batchsize=batchsize)
+        if batch is None:
+            return None
+        schema = self.schema
+
+        c_row_sets.push_back(batch.data.get())
+
+        return self._row_sets_to_pandas(schema, c_row_sets)
+
+    cdef _row_sets_to_pandas(self, Schema schema, vector[CColumnarRowSet*] c_row_sets):
+
+        import pandas as pd
+
         # TODO(wesm): consider parallelizing deserialization
         column_names = []
         converted_columns = {}
@@ -260,6 +289,33 @@ cdef class Operation:
             converted_columns[col_name] = result
 
         return pd.DataFrame(converted_columns, columns=column_names)
+
+
+    cdef ColumnarRowSet fetchbatch_internal(self, batchsize=None):
+        cdef:
+            ColumnarRowSet row_set
+            int c_batchsize
+            c_bool has_more_rows
+
+        if batchsize is not None:
+            c_batchsize = batchsize
+        else:
+            # TODO(wesm): consider picking a default as a function of the
+            # number of columns in the result set (e.g. 2 ** 16 /
+            # log2(n_columns)). Investigate performance implications
+            c_batchsize = DEFAULT_BATCHSIZE
+
+        cdef list batches = []
+
+        has_more_rows = True
+        row_set = ColumnarRowSet()
+        check_status(self.op.get()
+                     .Fetch(c_batchsize, FetchOrientation_NEXT,
+                            &row_set.data, &has_more_rows))
+        if not has_more_rows:
+            return None
+
+        return row_set
 
     cdef fetchall_internal(self, batchsize=None):
         cdef:
